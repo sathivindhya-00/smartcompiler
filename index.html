@@ -229,6 +229,124 @@
     .dark textarea::-webkit-scrollbar-thumb:hover {
       background: #475569;
     }
+
+    /* Custom Dropdown Styles */
+    .custom-select-container {
+      position: relative;
+      width: 100%;
+    }
+
+    .custom-select-trigger {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding: 0.75rem 1rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #334155;
+      background: rgba(255, 255, 255, 0.4);
+      border: 1px solid #e2e8f0;
+      border-radius: 0.75rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .dark .custom-select-trigger {
+      color: #e2e8f0;
+      background: rgba(30, 41, 59, 0.4);
+      border-color: #334155;
+    }
+
+    .custom-select-trigger:hover {
+      background: rgba(255, 255, 255, 0.6);
+      border-color: #cbd5e1;
+    }
+
+    .dark .custom-select-trigger:hover {
+      background: rgba(30, 41, 59, 0.6);
+      border-color: #475569;
+    }
+
+    .custom-select-trigger.active {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+    }
+
+    .custom-select-options {
+      position: absolute;
+      top: calc(100% + 0.5rem);
+      left: 0;
+      right: 0;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid #e2e8f0;
+      border-radius: 0.75rem;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+      z-index: 50;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-10px) scale(0.98);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      overflow: hidden;
+    }
+
+    .dark .custom-select-options {
+      background: rgba(15, 23, 42, 0.9);
+      border-color: #334155;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+    }
+
+    .custom-select-options.show {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0) scale(1);
+    }
+
+    .custom-option {
+      padding: 0.75rem 1rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #475569;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .dark .custom-option {
+      color: #94a3b8;
+    }
+
+    .custom-option:hover {
+      background: rgba(59, 130, 246, 0.1);
+      color: #2563eb;
+    }
+
+    .dark .custom-option:hover {
+      background: rgba(59, 130, 246, 0.2);
+      color: #60a5fa;
+    }
+
+    .custom-option.selected {
+      background: rgba(59, 130, 246, 0.1);
+      color: #2563eb;
+      font-weight: 700;
+    }
+
+    .dark .custom-option.selected {
+      background: rgba(59, 130, 246, 0.2);
+      color: #60a5fa;
+    }
+
+    .custom-chevron {
+      transition: transform 0.3s ease;
+    }
+
+    .custom-select-trigger.active .custom-chevron {
+      transform: rotate(180deg);
+    }
   </style>
 </head>
 
@@ -306,20 +424,28 @@
           </svg>
           PROGRAMMING LANGUAGE
         </label>
-        <div class="relative">
-          <select id="language"
-            class="w-full appearance-none rounded-xl border border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-800/50 px-4 py-3 text-slate-900 dark:text-slate-100 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 focus:outline-none transition-all duration-200">
+        <div class="custom-select-container" id="languageContainer">
+          <select id="language" class="hidden">
             <option value="">Select Language...</option>
-            <option value="c">C Language</option>
-            <option value="cpp">C++ (Standard)</option>
-            <option value="javascript">JavaScript (Node.js)</option>
-            <option value="python">Python 3.x</option>
-            <option value="java">Java (OpenJDK)</option>
+            <option value="c">C</option>
+            <option value="cpp">C++</option>
+            <option value="javascript">JavaScript</option>
+            <option value="python">Python</option>
+            <option value="java">Java</option>
           </select>
-          <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
-            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+          <div class="custom-select-trigger" onclick="toggleCustomSelect('languageContainer')">
+            <span id="languageLabel">Select Language...</span>
+            <svg class="h-4 w-4 custom-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path>
             </svg>
+          </div>
+          <div class="custom-select-options" id="languageOptions">
+            <div class="custom-option" onclick="selectCustomOption('language', '')">Select Language...</div>
+            <div class="custom-option" onclick="selectCustomOption('language', 'c')">C Language</div>
+            <div class="custom-option" onclick="selectCustomOption('language', 'cpp')">C++ (Standard)</div>
+            <div class="custom-option" onclick="selectCustomOption('language', 'javascript')">JavaScript (Node.js)</div>
+            <div class="custom-option" onclick="selectCustomOption('language', 'python')">Python 3.x</div>
+            <div class="custom-option" onclick="selectCustomOption('language', 'java')">Java (OpenJDK)</div>
           </div>
         </div>
       </div>
@@ -332,18 +458,24 @@
           </svg>
           CHALLENGE TYPE
         </label>
-        <div class="relative">
-          <select id="puzzle"
-            class="w-full appearance-none rounded-xl border border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-800/50 px-4 py-3 text-slate-900 dark:text-slate-100 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 focus:outline-none transition-all duration-200">
+        <div class="custom-select-container" id="puzzleContainer">
+          <select id="puzzle" class="hidden">
             <option value="">Select Prototype...</option>
             <option value="riddle">Riddle Challenge</option>
             <option value="logic">Logical Puzzle</option>
             <option value="language">Syntax Feature</option>
           </select>
-          <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
-            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+          <div class="custom-select-trigger" onclick="toggleCustomSelect('puzzleContainer')">
+            <span id="puzzleLabel">Select Prototype...</span>
+            <svg class="h-4 w-4 custom-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"></path>
             </svg>
+          </div>
+          <div class="custom-select-options" id="puzzleOptions">
+            <div class="custom-option" onclick="selectCustomOption('puzzle', '')">Select Prototype...</div>
+            <div class="custom-option" onclick="selectCustomOption('puzzle', 'riddle')">Riddle Challenge</div>
+            <div class="custom-option" onclick="selectCustomOption('puzzle', 'logic')">Logical Puzzle</div>
+            <div class="custom-option" onclick="selectCustomOption('puzzle', 'language')">Syntax Feature</div>
           </div>
         </div>
       </div>
@@ -446,7 +578,7 @@
         EXECUTION OUTPUT
       </label>
       <div id="output"
-        class="glass rounded-xl border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-950/80 text-slate-800 dark:text-slate-300 p-5 text-sm font-mono min-h-[160px] output-pre overflow-auto max-h-[400px] shadow-inner">
+        class="glass rounded-xl border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-950/80 text-slate-800 dark:text-slate-300 p-2 text-sm font-mono min-h-[160px] output-pre overflow-auto max-h-[400px] shadow-inner">
         <span class="text-slate-400 dark:text-slate-600 italic">Terminal ready. Waiting for compilation...</span>
       </div>
 
@@ -631,6 +763,63 @@
 
   <!-- Script -->
   <script>
+    // Global State
+    let lastErrorInfo = { line: 0, message: "", friendlyMsg: "" };
+
+    // Helper Functions for User Understanding
+    function getFriendlyErrorMessage(rawError, language) {
+      if (!rawError) return "Wait, we couldn't pinpoint the exact issue. Please double-check your syntax!";
+
+      const lowerError = rawError.toLowerCase();
+
+      // Syntax Pairings
+      if (lowerError.includes("expected ';'") || lowerError.includes("missing ';'")) {
+        return "It looks like you missed a semicolon (`;`) at the end of a statement. In many languages, semicolons are like periods at the end of sentences.";
+      }
+      if (lowerError.includes("expected '}'") || lowerError.includes("missing closing '}'")) {
+        return "You're missing a closing brace (`}`). Check that every opening `{` has a corresponding closing `}` to wrap your code correctly.";
+      }
+      if (lowerError.includes("expected ')'") || lowerError.includes("missing closing ')'")) {
+        return "A closing parenthesis (`)`) is missing. This usually happens in function calls or mathematical expressions.";
+      }
+      if (lowerError.includes("unmatched quote") || lowerError.includes("missing closing double quote")) {
+        return "A string quote is left open. Make sure your text is wrapped in matching `\"` or `'` marks.";
+      }
+
+      // Common Logic Issues
+      if (lowerError.includes("was not declared in this scope") || lowerError.includes("is not defined")) {
+        const match = rawError.match(/'([^']+)'/);
+        const name = match ? match[1] : "this variable";
+        return `The name \`${name}\` isn't recognized. Did you forget to declare it (e.g., \`int ${name}\` or \`const ${name}\`) or type it correctly?`;
+      }
+      if (lowerError.includes("division by zero")) {
+        return "Be careful! Dividing by zero is mathematically impossible and will crash your program.";
+      }
+      if (lowerError.includes("indentationerror")) {
+        return "Python is very picky about spacing! Ensure your code blocks (like inside an `if` statement) are indented consistently with 4 spaces.";
+      }
+      if (lowerError.includes("missing main method")) {
+        return "Java needs a starting point! Ensure you have `public static void main(String[] args)` inside your class.";
+      }
+
+      return "We found a small syntax hiccup. Standard practice is to check the line indicated for missing symbols or typos!";
+    }
+
+    function scrollToLine(lineNumber) {
+      const textarea = document.getElementById("code");
+      const lines = textarea.value.split('\n');
+      let charPos = 0;
+      for (let i = 0; i < lineNumber - 1; i++) {
+        charPos += lines[i].length + 1;
+      }
+      textarea.focus();
+      textarea.setSelectionRange(charPos, charPos + (lines[lineNumber - 1] ? lines[lineNumber - 1].length : 0));
+
+      // Roughly scroll into view if possible
+      const lineHeight = 20; // estimate
+      textarea.scrollTop = (lineNumber - 5) * lineHeight;
+    }
+
     // Theme Management
     function initTheme() {
       const savedTheme = localStorage.getItem('theme') || 'dark';
@@ -1009,11 +1198,8 @@ Size: 3
 <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.1" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
 Compilation Error Detected
 </div>
-<div class="text-sm font-medium leading-relaxed text-slate-700 dark:text-slate-300 mb-2">
-  Our engine found a syntax or logic issue. To reveal the fix and continue, please solve this challenge:
-</div>
-<div class="p-4 rounded-lg bg-orange-500/5 border border-orange-500/20 italic text-sm text-slate-600 dark:text-slate-400">
-  "${puzzleData ? puzzleData.question : 'Loading challenge...'}"
+<div class="text-sm font-medium leading-relaxed text-slate-700 dark:text-slate-300">
+  A problem was detected in your code. To view the challenge and unlock the fix, please click the button below.
 </div>
 </div>`;
 
@@ -1399,6 +1585,16 @@ Bonus Challenge Available
       const errorDetails = detectErrors(code, language);
       const hasError = errorDetails !== null;
 
+      if (hasError) {
+        lastErrorInfo = {
+          line: errorDetails.line || 1,
+          message: errorDetails.error,
+          friendlyMsg: getFriendlyErrorMessage(errorDetails.error, language)
+        };
+      } else {
+        lastErrorInfo = { line: 0, message: "", friendlyMsg: "" };
+      }
+
       // Show steps panel and reset steps
       stepsPanel.classList.remove('hidden');
       document.getElementById("step-lex").classList.remove('done');
@@ -1540,7 +1736,8 @@ Bonus Challenge Available
 
     function submitPuzzleAnswer() {
       if (!currentPuzzleForModal) return;
-      const puzzleData = puzzleQuestions[currentPuzzleForModal];
+      const puzzleId = currentPuzzleForModal; // Capture ID before state is cleared
+      const puzzleData = puzzleQuestions[puzzleId];
       const userAnswer = document.getElementById("puzzleAnswerInput").value.trim();
       const feedback = document.getElementById("puzzleFeedback");
 
@@ -1563,9 +1760,36 @@ Bonus Challenge Available
         setTimeout(() => {
           closePuzzleModal();
           const language = document.getElementById("language").value;
-          if (samples[currentPuzzleForModal] && samples[currentPuzzleForModal][language]) {
-            document.getElementById("code").value = samples[currentPuzzleForModal][language];
-            document.getElementById("output").innerHTML = '<span class="text-slate-600 dark:text-slate-400 text-sm font-medium">Solution loaded. Click "Compile & Run" to verify.</span>';
+          if (samples[puzzleId] && samples[puzzleId][language]) {
+            document.getElementById("code").value = samples[puzzleId][language];
+            document.getElementById("output").innerHTML = `
+              <div class="glass rounded-lg p-3.5 border border-slate-200 dark:border-white/10 bg-white/50 dark:bg-slate-900/50 animate-fadeIn space-y-2.5 max-w-2xl mx-auto shadow-sm whitespace-normal leading-tight">
+                <div class="flex items-center gap-2.5 pb-2 border-b border-slate-100 dark:border-white/5">
+                  <div class="w-6 h-6 bg-emerald-500 rounded flex-shrink-0 flex items-center justify-center">
+                    <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                  </div>
+                  <div class="flex flex-col min-w-0">
+                    <span class="text-slate-900 dark:text-white font-bold text-[11px] uppercase tracking-wider truncate">Solution Unlocked</span>
+                    <span class="text-[9px] text-emerald-600 dark:text-emerald-400 font-medium leading-none">Line ${lastErrorInfo.line} identified</span>
+                  </div>
+                </div>
+                <div class="space-y-2.5">
+                  <div class="pl-3 border-l-2 border-emerald-500 py-0.5">
+                    <p class="text-[13px] text-slate-700 dark:text-slate-200 font-bold leading-snug">${lastErrorInfo.friendlyMsg}</p>
+                  </div>
+                  <div class="bg-slate-50 dark:bg-black/20 rounded p-2 border border-slate-100 dark:border-white/5">
+                    <div class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Technical Detail</div>
+                    <code class="block font-mono text-[10px] text-slate-500 dark:text-slate-400 break-words leading-tight">${lastErrorInfo.message.replace(/\n/g, '<br>')}</code>
+                  </div>
+                </div>
+                <div class="pt-0.5 flex justify-center">
+                  <button onclick="scrollToLine(${lastErrorInfo.line})" class="inline-flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 dark:bg-white/10 dark:hover:bg-white/20 text-white rounded px-5 py-2 text-[10px] font-bold uppercase tracking-widest transition-all active:scale-[0.98] shadow-sm border border-white/5">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                    <span>Focus Line ${lastErrorInfo.line}</span>
+                  </button>
+                </div>
+              </div>
+            `;
           }
         }, 1500);
       } else {
@@ -1578,7 +1802,8 @@ Bonus Challenge Available
 
     function revealPuzzleAnswer() {
       if (!currentPuzzleForModal) return;
-      const puzzleData = puzzleQuestions[currentPuzzleForModal];
+      const puzzleId = currentPuzzleForModal;
+      const puzzleData = puzzleQuestions[puzzleId];
       const feedback = document.getElementById("puzzleFeedback");
 
       feedback.textContent = `Answer: ${puzzleData.answer}`;
@@ -1586,11 +1811,89 @@ Bonus Challenge Available
       feedback.classList.add("bg-emerald-500/10", "text-emerald-600", "dark:text-emerald-400", "border-emerald-500/20");
 
       const language = document.getElementById("language").value;
-      if (samples[currentPuzzleForModal] && samples[currentPuzzleForModal][language]) {
-        document.getElementById("code").value = samples[currentPuzzleForModal][language];
-        document.getElementById("output").innerHTML = '<span class="text-slate-600 dark:text-slate-400 text-sm font-medium">Solution loaded in editor.</span>';
+      if (samples[puzzleId] && samples[puzzleId][language]) {
+        document.getElementById("code").value = samples[puzzleId][language];
+        document.getElementById("output").innerHTML = `
+          <div class="glass rounded-lg p-3.5 border border-slate-200 dark:border-white/10 bg-white/30 dark:bg-slate-900/30 animate-fadeIn space-y-2.5 max-w-2xl mx-auto shadow-sm whitespace-normal leading-tight">
+             <div class="flex items-center gap-2.5 pb-2 border-b border-slate-100 dark:border-white/5">
+                <div class="w-6 h-6 bg-blue-500 rounded flex-shrink-0 flex items-center justify-center">
+                  <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+                <div class="flex flex-col min-w-0">
+                  <span class="text-slate-900 dark:text-white font-bold text-[11px] uppercase tracking-wider truncate">Reference Fix</span>
+                  <span class="text-[9px] text-blue-500 font-medium leading-none">Line ${lastErrorInfo.line} identified</span>
+                </div>
+             </div>
+             <div class="space-y-2.5">
+                <div class="pl-3 border-l-2 border-blue-500 py-0.5">
+                  <p class="text-[13px] text-slate-700 dark:text-slate-200 font-bold leading-snug">${lastErrorInfo.friendlyMsg}</p>
+                </div>
+                <div class="bg-slate-50 dark:bg-black/10 rounded p-2 border border-slate-100 dark:border-white/5">
+                  <div class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Original Trace</div>
+                  <code class="block font-mono text-[10px] text-slate-500 dark:text-slate-400 break-words leading-tight">${lastErrorInfo.message.replace(/\n/g, '<br>')}</code>
+                </div>
+             </div>
+             <div class="pt-0.5 flex justify-center">
+                <button onclick="scrollToLine(${lastErrorInfo.line})" class="inline-flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 text-slate-700 dark:text-slate-200 rounded px-5 py-2 text-[10px] font-bold uppercase tracking-widest transition-all active:scale-[0.98] border border-slate-200 dark:border-white/10 shadow-sm">
+                  <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                  <span>Focus Line ${lastErrorInfo.line}</span>
+                </button>
+             </div>
+          </div>
+        `;
       }
     }
+    // Dropdown Handlers
+    function toggleCustomSelect(containerId) {
+      const container = document.getElementById(containerId);
+      const trigger = container.querySelector('.custom-select-trigger');
+      const options = container.querySelector('.custom-select-options');
+      const isOpen = options.classList.contains('show');
+
+      // Close all others
+      document.querySelectorAll('.custom-select-options').forEach(opt => opt.classList.remove('show'));
+      document.querySelectorAll('.custom-select-trigger').forEach(trig => trig.classList.remove('active'));
+
+      if (!isOpen) {
+        options.classList.add('show');
+        trigger.classList.add('active');
+      }
+    }
+
+    function selectCustomOption(selectId, value) {
+      const select = document.getElementById(selectId);
+      const container = select.parentElement;
+      const label = document.getElementById(selectId + 'Label');
+      const options = container.querySelectorAll('.custom-option');
+
+      select.value = value;
+
+      // Update Label
+      const selectedOption = Array.from(options).find(opt =>
+        (opt.getAttribute('onclick').includes(`'${value}'`))
+      );
+      label.textContent = selectedOption ? selectedOption.textContent : 'Select...';
+
+      // Update Selection Styles
+      options.forEach(opt => opt.classList.remove('selected'));
+      if (selectedOption) selectedOption.classList.add('selected');
+
+      // Close Menu
+      container.querySelector('.custom-select-options').classList.remove('show');
+      container.querySelector('.custom-select-trigger').classList.remove('active');
+
+      // Trigger standard change event if needed
+      select.dispatchEvent(new Event('change'));
+    }
+
+    // Close on click outside
+    window.addEventListener('click', function (e) {
+      if (!e.target.closest('.custom-select-container')) {
+        document.querySelectorAll('.custom-select-options').forEach(opt => opt.classList.remove('show'));
+        document.querySelectorAll('.custom-select-trigger').forEach(trig => trig.classList.remove('active'));
+      }
+    });
+
     // ==================== END PUZZLE MODAL ====================
 
     document.getElementById("password").addEventListener("keydown", function (e) {
