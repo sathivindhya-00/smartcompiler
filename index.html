@@ -1002,14 +1002,18 @@ Size: 3
     function showErrorWithPuzzle(errorMsg, puzzle) {
       const output = document.getElementById("output");
       const actions = document.getElementById("outputActions");
+      const puzzleData = puzzleQuestions[puzzle];
 
       output.innerHTML = `<div class="glass rounded-xl p-6 border-red-500/20 dark:border-red-500/10 bg-red-500/5 animate-fadeIn text-left">
 <div class="flex items-center gap-3 text-red-600 dark:text-red-400 font-bold text-[11px] uppercase tracking-[0.15em] mb-4">
 <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.1" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-Compilation Error
+Compilation Error Detected
 </div>
-<div class="text-xs font-mono leading-relaxed text-slate-700 dark:text-slate-300">
-${errorMsg.replace(/\n/g, '<br>')}
+<div class="text-sm font-medium leading-relaxed text-slate-700 dark:text-slate-300 mb-2">
+  Our engine found a syntax or logic issue. To reveal the fix and continue, please solve this challenge:
+</div>
+<div class="p-4 rounded-lg bg-orange-500/5 border border-orange-500/20 italic text-sm text-slate-600 dark:text-slate-400">
+  "${puzzleData ? puzzleData.question : 'Loading challenge...'}"
 </div>
 </div>`;
 
@@ -1021,7 +1025,7 @@ ${errorMsg.replace(/\n/g, '<br>')}
           </div>
           <div class="text-left flex-1">
             <div class="uppercase text-[9px] tracking-[0.2em] opacity-70 font-black">Intelligent Fix</div>
-            <div class="text-base tracking-tight">Unlock Working Solution</div>
+            <div class="text-base tracking-tight">Answer Puzzle to Unlock</div>
           </div>
           <svg class="w-5 h-5 opacity-50 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
         </button>
@@ -1415,10 +1419,18 @@ Bonus Challenge Available
         setTimeout(() => {
           const puzzleData = puzzle && puzzleQuestions[puzzle];
           if (puzzleData) {
-            // Show actual error first, then puzzle question
-            showErrorWithPuzzle(errorDetails.error, puzzle);
+            // Show generic error message and the puzzle instead of raw error
+            showErrorWithPuzzle(null, puzzle);
           } else {
-            output.innerHTML = `<span class="code-error">${errorDetails.error}</span>`;
+            output.innerHTML = `<div class="glass rounded-xl p-6 border-amber-500/20 bg-amber-500/5 animate-fadeIn">
+              <div class="flex items-center gap-3 text-amber-600 dark:text-amber-400 font-bold text-[11px] uppercase tracking-widest mb-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                Compilation Interrupted
+              </div>
+              <p class="text-sm text-slate-700 dark:text-slate-300">
+                A potential issue was found in your code. Please select a <b>Challenge Type</b> above to reveal the fix!
+              </p>
+            </div>`;
           }
           stepsPanel.classList.add('hidden');
         }, 900);
