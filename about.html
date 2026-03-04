@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About | Smart Compiler 2.0</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap"
+        rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['Fira Code', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        :root {
+            --glass-bg: rgba(255, 255, 255, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.3);
+            --text-main: #1e293b;
+        }
+
+        .dark {
+            --glass-bg: rgba(15, 23, 42, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-main: #f1f5f9;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s ease;
+        }
+
+        .glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fadeIn {
+            animation: fadeIn 0.5s ease-out forwards;
+        }
+
+        .delay-100 {
+            animation-delay: 0.1s;
+        }
+
+        .delay-200 {
+            animation-delay: 0.2s;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 min-h-screen">
+
+    <!-- Background Glows -->
+    <div class="fixed top-0 left-0 w-full h-full pointer-events-none overflow-hidden -z-10">
+        <div
+            class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-500/10 dark:bg-blue-600/10 rounded-full blur-[120px]">
+        </div>
+        <div
+            class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-500/10 dark:bg-indigo-600/10 rounded-full blur-[120px]">
+        </div>
+    </div>
+
+    <div class="max-w-4xl mx-auto px-6 py-12 lg:py-20">
+
+        <!-- Header/Nav -->
+        <header class="flex items-center justify-between mb-16 animate-fadeIn">
+            <div class="flex items-center gap-3">
+                <div
+                    class="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center shadow-lg transform rotate-3">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                            d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">Smart Compiler
+                        <span class="text-blue-600">2.0</span></h1>
+                    <p class="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400">Learn · Compile · Improve
+                    </p>
+                </div>
+            </div>
+            <a href="index.html"
+                class="glass px-5 py-2.5 rounded-xl text-sm font-bold border-slate-200 dark:border-white/10 hover:bg-slate-100 dark:hover:bg-white/5 transition-all flex items-center gap-2 group">
+                <svg class="w-4 h-4 transform group-hover:-translate-x-1 transition-transform" fill="none"
+                    stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                Back to IDE
+            </a>
+        </header>
+
+        <main class="space-y-12">
+
+            <!-- Hero Section -->
+            <section class="animate-fadeIn delay-100">
+                <h2 class="text-4xl lg:text-5xl font-extrabold text-slate-900 dark:text-white mb-6 leading-tight">
+                    Redefining the <span
+                        class="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Coding
+                        Experience</span>.
+                </h2>
+                <p class="text-lg text-slate-500 dark:text-slate-400 leading-relaxed max-w-2xl">
+                    Smart Compiler 2.0 is an intelligent polyglot development environment that bridges the gap between
+                    writing code and understanding it. Designed with a focus on education and performance, it transforms
+                    every compilation into a learning opportunity.
+                </p>
+            </section>
+
+            <!-- Grid Sections -->
+            <section class="grid md:grid-cols-2 gap-6 animate-fadeIn delay-200">
+
+                <!-- Pillar 1 -->
+                <div class="glass p-8 rounded-3xl border-slate-200 dark:border-white/5 space-y-4">
+                    <div class="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-600 flex items-center justify-center">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M3 10h18M7 15h1m4 0h1m-7 4h12a2 2 0 002-2V5a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z">
+                            </path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900 dark:text-white">Int Intelligent Analysis</h3>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+                        Our multi-stage analysis engine doesn't just catch syntax errors. It understands logic patterns
+                        and semantic nuances across C, C++, Java, Python, and JavaScript.
+                    </p>
+                </div>
+
+                <!-- Pillar 2 -->
+                <div class="glass p-8 rounded-3xl border-slate-200 dark:border-white/5 space-y-4">
+                    <div
+                        class="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7">
+                            </path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900 dark:text-white">Gamified Mastery</h3>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+                        Stuck on an error? Unlock the solution by solving interactive coding puzzles. We turn debugging
+                        frustration into a game of skill and discovery.
+                    </p>
+                </div>
+
+                <!-- Pillar 3 -->
+                <div class="glass p-8 rounded-3xl border-slate-200 dark:border-white/5 space-y-4">
+                    <div
+                        class="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-600 flex items-center justify-center">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
+                            </path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900 dark:text-white">Real-Time Metrics</h3>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+                        Track performance with high-precision metrics. Monitor Execution Time, Memory Usage, and Network
+                        Latency to optimize your algorithms.
+                    </p>
+                </div>
+
+                <!-- Pillar 4 -->
+                <div class="glass p-8 rounded-3xl border-slate-200 dark:border-white/5 space-y-4">
+                    <div
+                        class="w-12 h-12 rounded-2xl bg-purple-500/10 text-purple-600 flex items-center justify-center">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01">
+                            </path>
+                        </svg>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-900 dark:text-white">Artisanal Design</h3>
+                    <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+                        Crafted with Glassmorphism principles, Smart Compiler 2.0 offers a premium, distraction-free
+                        environment that feels alive in both Light and Dark modes.
+                    </p>
+                </div>
+
+            </section>
+
+            <!-- Long Description -->
+            <section class="animate-fadeIn delay-200">
+                <div class="glass p-10 rounded-3xl border-slate-200 dark:border-white/5">
+                    <h3 class="text-2xl font-bold text-slate-900 dark:text-white mb-6">Our Vision</h3>
+                    <div
+                        class="prose prose-slate dark:prose-invert max-w-none space-y-4 text-slate-600 dark:text-slate-400">
+                        <p>
+                            We believe that the barriers to entry in software engineering should be minimal, but the
+                            pathway to mastery should be rigorous. Smart Compiler 2.0 was born from the idea that a
+                            compiler should be more than a black box that says "Success" or "Failure".
+                        </p>
+                        <p>
+                            By integrating deep code analysis with a gamified progression system, we ensure that every
+                            error is a lesson and every successful execution is a milestone. Whether you're a student
+                            learning your first language or a professional experimenting with a new algorithm, our IDE
+                            provides the insights you need to get better, faster.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <footer class="mt-20 pt-10 border-t border-slate-200 dark:border-white/5 text-center animate-fadeIn">
+            <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">
+                Smart Compiler &copy; 2026 · Built for the next generation of Developers
+            </p>
+        </footer>
+
+    </div>
+
+    <script>
+        // Theme sync with parent
+        function initTheme() {
+            const theme = localStorage.getItem('theme') || 'dark';
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        }
+        initTheme();
+
+        // Listen for storage changes in case user toggles theme in another tab
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'theme') initTheme();
+        });
+    </script>
+</body>
+
+</html>

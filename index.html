@@ -1,0 +1,1609 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Compiler</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap"
+    rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['Fira Code', 'monospace'],
+          },
+          colors: {
+            accent: {
+              primary: '#3b82f6',
+              secondary: '#10b981',
+              warning: '#f59e0b',
+              danger: '#ef4444',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --glass-bg: rgba(255, 255, 255, 0.85);
+      --glass-border: rgba(0, 0, 0, 0.1);
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --panel-glow: rgba(59, 130, 246, 0.05);
+    }
+
+    .dark {
+      --glass-bg: rgba(15, 23, 42, 0.9);
+      --glass-border: rgba(255, 255, 255, 0.1);
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --panel-glow: rgba(59, 130, 246, 0.15);
+    }
+
+    body {
+      color: var(--text-main);
+      font-family: 'Inter', sans-serif;
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    .glass {
+      background: var(--glass-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--glass-border);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      border: 2px solid #10b981;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .fade-in {
+      animation: fadeIn 0.4s ease-out forwards;
+    }
+
+    .code-success {
+      color: #10b981;
+      font-weight: 500;
+    }
+
+    .code-error {
+      color: #ef4444;
+      font-weight: 500;
+    }
+
+    .code-warning {
+      color: #f59e0b;
+      font-weight: 500;
+    }
+
+    .output-pre {
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      font-family: 'Fira Code', monospace;
+    }
+
+    .step-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 0;
+      font-size: 0.875rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .step-item:last-child {
+      border-bottom: none;
+    }
+
+    .step-circle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background-color: #1e293b;
+      border: 1px solid #334155;
+      font-size: 0.75rem;
+      color: #94a3b8;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      font-weight: 600;
+    }
+
+    .step-circle.done {
+      background-color: #059669;
+      border-color: #10b981;
+      color: white;
+      box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
+      transform: scale(1.1);
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 1.25rem;
+      margin-top: 1.5rem;
+    }
+
+    .metric-item {
+      padding: 1.25rem;
+      border-radius: 1rem;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      transition: all 0.3s ease;
+    }
+
+    .metric-item:hover {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .metric-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #10b981;
+      font-family: 'Fira Code', monospace;
+    }
+
+    .metric-label {
+      font-size: 0.75rem;
+      color: #94a3b8;
+      margin-top: 0.25rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background-color: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    textarea::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    textarea::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    textarea::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+
+    .dark textarea::-webkit-scrollbar-thumb {
+      background: #334155;
+    }
+
+    textarea::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+
+    .dark textarea::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+  </style>
+</head>
+
+<body class="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-500 overflow-x-hidden">
+  <!-- Dynamic Background Glows -->
+  <div class="fixed inset-0 overflow-hidden pointer-events-none z-0">
+    <div class="absolute -top-24 -left-24 w-96 h-96 bg-blue-500/10 dark:bg-blue-600/10 rounded-full blur-[120px]">
+    </div>
+    <div
+      class="absolute top-1/2 -right-24 w-80 h-80 bg-emerald-500/10 dark:bg-emerald-600/10 rounded-full blur-[100px]">
+    </div>
+    <div
+      class="absolute -bottom-24 left-1/2 w-96 h-96 bg-purple-500/10 dark:bg-purple-600/10 rounded-full blur-[120px]">
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header class="glass sticky top-0 z-40 border-b border-slate-200 dark:border-white/5">
+    <div class="container mx-auto flex items-center justify-between px-6 py-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-900/40">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold tracking-tight text-slate-900 dark:text-white transition-colors">
+            Smart Compiler</h1>
+          <p class="text-xs font-semibold text-blue-600 dark:text-blue-400/80 uppercase tracking-widest">Learn · Compile
+            · Improve</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-4">
+        <a href="about.html"
+          class="hidden sm:block text-[10px] font-bold text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 uppercase tracking-widest transition-colors mr-2">About
+          Project</a>
+        <button id="themeToggle" onclick="toggleTheme()"
+          class="p-2.5 rounded-xl bg-slate-200 dark:bg-slate-800/10 border border-slate-300 dark:border-slate-500/20 text-slate-500 dark:text-slate-400 hover:bg-slate-300 dark:hover:bg-slate-800/20 hover:text-blue-600 dark:hover:text-blue-400 transition-all duration-300">
+          <svg id="sunIcon" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.364 17.364l-.707.707M17.364 17.364l-.707.707M6.364 6.364l-.707.707M15 12a3 3 0 11-6 0 3 3 0 016 0z">
+            </path>
+          </svg>
+          <svg id="moonIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path>
+          </svg>
+        </button>
+        <button id="signInBtn" onclick="openSignIn()"
+          class="relative group overflow-hidden rounded-xl bg-blue-600/10 px-5 py-2.5 text-sm font-semibold text-blue-600 dark:text-blue-400 border border-blue-500/30 hover:bg-blue-600 hover:text-white transition-all duration-300">
+          <span class="relative z-10 flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
+            </svg>
+            Sign In
+          </span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container mx-auto max-w-4xl space-y-8 px-6 py-12 relative z-10 animate-fadeIn">
+
+    <!-- Language & Puzzle Selection -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div class="space-y-3">
+        <label class="text-sm font-semibold text-slate-400 flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5c.318 1.02.694 1.971 1.104 2.848">
+            </path>
+          </svg>
+          PROGRAMMING LANGUAGE
+        </label>
+        <div class="relative">
+          <select id="language"
+            class="w-full appearance-none rounded-xl border border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-800/50 px-4 py-3 text-slate-900 dark:text-slate-100 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 focus:outline-none transition-all duration-200">
+            <option value="">Select Language...</option>
+            <option value="c">C Language</option>
+            <option value="cpp">C++ (Standard)</option>
+            <option value="javascript">JavaScript (Node.js)</option>
+            <option value="python">Python 3.x</option>
+            <option value="java">Java (OpenJDK)</option>
+          </select>
+          <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </div>
+        </div>
+      </div>
+      <div class="space-y-3">
+        <label class="text-sm font-semibold text-slate-400 flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z">
+            </path>
+          </svg>
+          CHALLENGE TYPE
+        </label>
+        <div class="relative">
+          <select id="puzzle"
+            class="w-full appearance-none rounded-xl border border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-800/50 px-4 py-3 text-slate-900 dark:text-slate-100 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 focus:outline-none transition-all duration-200">
+            <option value="">Select Prototype...</option>
+            <option value="riddle">Riddle Challenge</option>
+            <option value="logic">Logical Puzzle</option>
+            <option value="language">Syntax Feature</option>
+          </select>
+          <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
+            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Code Editor -->
+    <div class="space-y-3">
+      <div class="flex items-center justify-between">
+        <label class="text-sm font-semibold text-slate-400 flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+          </svg>
+          SOURCE CODE EDITOR
+        </label>
+        <span
+          class="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tighter bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">Read-Only
+          Sample</span>
+      </div>
+      <div class="relative group">
+        <div
+          class="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-emerald-500 rounded-2xl opacity-10 group-focus-within:opacity-20 transition duration-500">
+        </div>
+        <textarea id="code" placeholder="Write your code here..."
+          class="relative w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-950/90 px-5 py-4 font-mono text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-600 focus:border-blue-500/50 focus:ring-0 focus:outline-none transition-all duration-300 min-h-[300px] shadow-sm dark:shadow-none"></textarea>
+      </div>
+
+      <div class="flex flex-col sm:flex-row gap-3 pt-2">
+        <button onclick="compileCode()"
+          class="flex-[2] flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-6 py-3.5 text-sm font-bold text-white hover:bg-emerald-500 hover:shadow-lg hover:shadow-emerald-900/20 active:scale-[0.98] transition-all duration-200">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z">
+            </path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          COMPILE & RUN
+        </button>
+        <button onclick="clearCode()"
+          class="flex-1 flex items-center justify-center gap-2 rounded-xl bg-slate-200 dark:bg-slate-800 px-6 py-3.5 text-sm font-bold text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-700 hover:bg-slate-300 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white active:scale-[0.98] transition-all duration-200">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+            </path>
+          </svg>
+          CLEAR
+        </button>
+      </div>
+    </div>
+
+    <!-- Compilation Steps -->
+    <div id="stepsPanel" class="space-y-3 hidden fade-in">
+      <label class="text-sm font-semibold text-slate-400 flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4">
+          </path>
+        </svg>
+        PROCESS PIPELINE
+      </label>
+      <div class="glass rounded-xl p-5 space-y-1">
+        <div class="step-item border-slate-200 dark:border-white/5">
+          <div
+            class="step-circle bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-400"
+            id="step-lex">1</div>
+          <span class="font-medium text-slate-600 dark:text-slate-300">Lexical Analysis</span>
+        </div>
+        <div class="step-item border-slate-200 dark:border-white/5">
+          <div
+            class="step-circle bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-400"
+            id="step-parse">2</div>
+          <span class="font-medium text-slate-600 dark:text-slate-300">Syntactic Parsing</span>
+        </div>
+        <div class="step-item border-slate-200 dark:border-white/5">
+          <div
+            class="step-circle bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-400"
+            id="step-compile">3</div>
+          <span class="font-medium text-slate-600 dark:text-slate-300">Semantic Compilation</span>
+        </div>
+        <div class="step-item border-slate-200 dark:border-white/5">
+          <div
+            class="step-circle bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-400"
+            id="step-link">4</div>
+          <span class="font-medium text-slate-600 dark:text-slate-300">Binary Linking</span>
+        </div>
+        <div class="step-item border-slate-200 dark:border-white/5">
+          <div
+            class="step-circle bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-400"
+            id="step-run">5</div>
+          <span class="font-medium text-slate-600 dark:text-slate-300">Runtime Execution</span>
+        </div>
+      </div>
+    </div><!-- Output Panel -->
+    <div class="space-y-3">
+      <label class="text-sm font-semibold text-slate-400 flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+        </svg>
+        EXECUTION OUTPUT
+      </label>
+      <div id="output"
+        class="glass rounded-xl border border-slate-200 dark:border-slate-700 bg-white/80 dark:bg-slate-950/80 text-slate-800 dark:text-slate-300 p-5 text-sm font-mono min-h-[160px] output-pre overflow-auto max-h-[400px] shadow-inner">
+        <span class="text-slate-400 dark:text-slate-600 italic">Terminal ready. Waiting for compilation...</span>
+      </div>
+
+      <!-- Specialized Actions (outside terminal) -->
+      <div id="outputActions" class="empty:hidden animate-fadeIn"></div>
+
+      <!-- Metrics Display -->
+      <div id="metrics" class="hidden metrics fade-in">
+        <div
+          class="metric-item group bg-white/60 dark:bg-white/5 border-slate-200 dark:border-white/10 shadow-sm dark:shadow-none">
+          <div class="flex items-center justify-between mb-1">
+            <svg class="w-4 h-4 text-emerald-600 dark:text-emerald-500" fill="none" stroke="currentColor"
+              viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"></path>
+            </svg>
+            <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500">LOC</span>
+          </div>
+          <div class="metric-value" id="metricLines">0</div>
+          <div class="metric-label text-slate-500 dark:text-slate-400">Lines of Code</div>
+        </div>
+        <div
+          class="metric-item group bg-white/60 dark:bg-white/5 border-slate-200 dark:border-white/10 shadow-sm dark:shadow-none">
+          <div class="flex items-center justify-between mb-1">
+            <svg class="w-4 h-4 text-blue-600 dark:text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500">LATENCY</span>
+          </div>
+          <div class="metric-value" id="metricTime">0ms</div>
+          <div class="metric-label text-slate-500 dark:text-slate-400">Execution Time</div>
+        </div>
+        <div
+          class="metric-item group bg-white/60 dark:bg-white/5 border-slate-200 dark:border-white/10 shadow-sm dark:shadow-none">
+          <div class="flex items-center justify-between mb-1">
+            <svg class="w-4 h-4 text-purple-600 dark:text-purple-500" fill="none" stroke="currentColor"
+              viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z">
+              </path>
+            </svg>
+            <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500">MEM</span>
+          </div>
+          <div class="metric-value" id="metricMemory">0MB</div>
+          <div class="metric-label text-slate-500 dark:text-slate-400">Memory Efficiency</div>
+        </div>
+        <div
+          class="metric-item group bg-white/60 dark:bg-white/5 border-slate-200 dark:border-white/10 shadow-sm dark:shadow-none">
+          <div class="flex items-center justify-between mb-1">
+            <svg class="w-4 h-4 text-amber-600 dark:text-amber-500" fill="none" stroke="currentColor"
+              viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
+              </path>
+            </svg>
+            <span class="text-[10px] font-bold text-slate-400 dark:text-slate-500">LINT</span>
+          </div>
+          <div class="metric-value" id="metricWarnings">0</div>
+          <div class="metric-label text-slate-500 dark:text-slate-400">Potential Issues</div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Sign In Modal -->
+  <div id="signInModal" class="modal">
+    <div class="glass rounded-2xl p-8 w-[400px] border border-slate-200 dark:border-white/10 shadow-2xl scale-in">
+      <div class="flex items-center gap-3 mb-8">
+        <div class="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-900/40">
+          <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z">
+            </path>
+          </svg>
+        </div>
+        <div>
+          <h2 class="text-2xl font-bold text-slate-900 dark:text-white">Sign In</h2>
+          <p class="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Compiler Account
+          </p>
+        </div>
+      </div>
+
+      <div class="space-y-5">
+        <div class="space-y-2">
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Account Email</label>
+          <input type="email" id="email" placeholder="dev@smartcompiler.io"
+            class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 px-4 py-3 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 focus:outline-none transition-all duration-200">
+        </div>
+
+        <div class="space-y-2">
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Security Token</label>
+          <input type="password" id="password" placeholder="••••••••••••"
+            class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 px-4 py-3 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 focus:outline-none transition-all duration-200">
+        </div>
+
+        <div id="signInMessage"
+          class="hidden text-sm p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-medium animate-pulse">
+        </div>
+
+        <div class="flex flex-col gap-3 pt-2">
+          <button onclick="signIn()"
+            class="w-full rounded-xl bg-blue-600 px-4 py-3.5 text-sm font-bold text-white hover:bg-blue-500 hover:shadow-lg hover:shadow-blue-900/30 transition-all duration-200">
+            AUTHENTICATE
+          </button>
+          <button onclick="loadDemoCredentials()"
+            class="w-full rounded-xl bg-slate-100 dark:bg-slate-800 px-4 py-3.5 text-sm font-bold text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-slate-900 dark:hover:text-white transition-all duration-200 flex items-center justify-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
+              </path>
+            </svg>
+            USE DEMO IDENTITY
+          </button>
+        </div>
+
+        <button onclick="closeSignIn()"
+          class="w-full text-xs font-bold text-slate-500 hover:text-slate-300 uppercase tracking-widest transition-colors py-2">
+          Dismiss
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Puzzle Modal -->
+  <div id="puzzleModal" class="modal">
+    <div
+      class="glass rounded-2xl p-8 w-[450px] max-h-[90vh] overflow-y-auto border border-slate-200 dark:border-white/10 shadow-2xl scale-in">
+      <div class="flex items-center gap-3 mb-8">
+        <div
+          class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-900/40">
+          <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z">
+            </path>
+          </svg>
+        </div>
+        <div>
+          <h2 class="text-2xl font-bold text-slate-900 dark:text-white" id="puzzleTitle">Challenge</h2>
+          <p class="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest">Answer to unlock
+            solution</p>
+        </div>
+      </div>
+
+      <div class="space-y-6">
+        <div class="space-y-3">
+          <p class="text-sm text-slate-600 dark:text-slate-300 leading-relaxed italic bg-slate-50 dark:bg-white/5 p-4 rounded-xl border border-slate-200 dark:border-white/10"
+            id="puzzleQuestion">
+            Loading question...
+          </p>
+        </div>
+
+        <div class="space-y-3">
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest ml-1">Your Answer</label>
+          <input type="text" id="puzzleAnswerInput" placeholder="Type your answer here..."
+            class="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 px-4 py-3 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-600 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 focus:outline-none transition-all duration-200">
+        </div>
+
+        <div id="puzzleFeedback" class="hidden p-3 rounded-xl text-sm font-bold border"></div>
+
+        <div class="flex flex-col gap-3 pt-2">
+          <button onclick="submitPuzzleAnswer()"
+            class="w-full rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 px-4 py-3.5 text-sm font-bold text-white shadow-lg shadow-blue-600/20 transition-all duration-200 flex items-center justify-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            VERIFY ANSWER
+          </button>
+          <button onclick="revealPuzzleAnswer()"
+            class="w-full rounded-xl bg-slate-100 dark:bg-slate-800 px-4 py-3.5 text-sm font-bold text-slate-600 dark:text-slate-300 border border-slate-300 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all duration-200">
+            Show Answer
+          </button>
+        </div>
+
+        <button onclick="closePuzzleModal()"
+          class="w-full text-xs font-bold text-slate-500 hover:text-slate-300 uppercase tracking-widest transition-colors py-2">
+          Dismiss
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Script -->
+  <script>
+    // Theme Management
+    function initTheme() {
+      const savedTheme = localStorage.getItem('theme') || 'dark';
+      document.documentElement.className = savedTheme;
+      updateThemeIcons(savedTheme);
+    }
+
+    function toggleTheme() {
+      const isDark = document.documentElement.classList.contains('dark');
+      const newTheme = isDark ? 'light' : 'dark';
+      document.documentElement.className = newTheme;
+      localStorage.setItem('theme', newTheme);
+      updateThemeIcons(newTheme);
+    }
+
+    function updateThemeIcons(theme) {
+      const sunIcon = document.getElementById('sunIcon');
+      const moonIcon = document.getElementById('moonIcon');
+      if (theme === 'dark') {
+        sunIcon.classList.add('hidden');
+        moonIcon.classList.remove('hidden');
+      } else {
+        sunIcon.classList.remove('hidden');
+        moonIcon.classList.add('hidden');
+      }
+    }
+
+    // Initialize theme immediately to prevent flash
+    initTheme();
+
+    const samples = {
+      riddle: {
+        c: `#include <stdio.h>
+
+int main() {
+    // Riddle: Find Fibonacci number at position 10
+    int a = 0, b = 1, c;
+    for (int i = 0; i < 9; i++) {
+        c = a + b;
+        a = b;
+        b = c;
+    }
+
+    printf("Fibonacci at position 10: %d\\n", b);
+    return 0;
+}`,
+        cpp: `#include <iostream>
+using namespace std;
+
+int main() {
+    // Riddle: Find all prime numbers up to 20
+    for (int i = 2; i <= 20; i++) {
+        bool isPrime = true;
+        for (int j = 2; j * j <= i; j++) {
+            if (i % j == 0) {
+                isPrime = false;
+                break;
+            }
+        }
+        if (isPrime) cout << i << " ";
+    }
+    cout << endl;
+    return 0;
+}`,
+        javascript: `// Riddle: Reverse a string
+const text = "SmartCompiler";
+const reversed = text.split('').reverse().join('');
+
+console.log("Original:", text);
+console.log("Reversed:", reversed);`,
+        python: `# Riddle: Check if a number is palindrome
+num = 12321
+num_str = str(num)
+is_palindrome = num_str == num_str[::-1]
+
+print(f"{num} is palindrome: {is_palindrome}")`,
+        java: `public class Main {
+    public static void main(String[] args) {
+        // Riddle: Find factorial of 5
+        int n = 5;
+        int factorial = 1;
+        for (int i = 1; i <= n; i++) {
+            factorial *= i;
+        }
+        System.out.println("Factorial of " + n + ": " + factorial);
+    }
+}`
+      },
+      logic: {
+        c: `#include <stdio.h>
+
+int main() {
+    // Logic: AND, OR, XOR operations
+    int a = 5, b = 3;
+
+    printf("a = %d, b = %d\\n", a, b);
+    printf("a AND b = %d\\n", a & b);
+    printf("a OR b = %d\\n", a | b);
+    printf("a XOR b = %d\\n", a ^ b);
+
+    return 0;
+}`,
+        cpp: `#include <iostream>
+using namespace std;
+
+int main() {
+    // Logic: Conditional branching
+    int score = 75;
+
+    if (score >= 90) cout << "Grade: A" << endl;
+    else if (score >= 80) cout << "Grade: B" << endl;
+    else if (score >= 70) cout << "Grade: C" << endl;
+    else cout << "Grade: F" << endl;
+
+    return 0;
+}`,
+        javascript: `// Logic: Truth table for AND, OR, NOT
+const cases = [
+  {a: true, b: true},
+  {a: true, b: false},
+  {a: false, b: true},
+  {a: false, b: false}
+];
+
+cases.forEach(c => {
+  console.log(\`\${c.a} AND \${c.b} = \${c.a && c.b}\`);
+});`,
+        python: `# Logic: Implement simple decision tree
+age = 25
+has_license = True
+
+if age >= 18 and has_license:
+    print("Can drive")
+else:
+    print("Cannot drive")`,
+        java: `public class Main {
+    public static void main(String[] args) {
+        // Logic: Switch statement
+        int day = 3;
+        switch(day) {
+            case 1: System.out.println("Monday"); break;
+            case 2: System.out.println("Tuesday"); break;
+            case 3: System.out.println("Wednesday"); break;
+            default: System.out.println("Other day");
+        }
+    }
+}`
+      },
+      language: {
+        c: `#include <stdio.h>
+#include <string.h>
+
+int main() {
+    // Language feature: Strings and pointers
+    char str[] = "Smart Compiler";
+
+    printf("String: %s\\n", str);
+    printf("Length: %zu\\n", strlen(str));
+    printf("First char: %c\\n", str[0]);
+
+    return 0;
+}`,
+        cpp: `#include <iostream>
+#include <vector>
+using namespace std;
+
+int main() {
+    // Language feature: STL containers
+    vector<int> vec = {10, 20, 30, 40, 50};
+
+    cout << "Vector: ";
+    for (int v : vec) cout << v << " ";
+    cout << endl;
+
+    return 0;
+}`,
+        javascript: `// Language feature: Arrow functions and destructuring
+const person = {name: "Dev", age: 25, city: "NYC"};
+const {name, age} = person;
+
+const greet = (n) => console.log(\`Hello, \${n}!\`);
+greet(name);`,
+        python: `# Language feature: List comprehension and decorators
+numbers = [1, 2, 3, 4, 5]
+squares = [x**2 for x in numbers]
+
+print(f"Numbers: {numbers}")
+print(f"Squares: {squares}")`,
+        java: `import java.util.*;
+
+public class Main {
+    public static void main(String[] args) {
+        // Language feature: Generics and Collections
+        List<String> fruits = Arrays.asList("Apple", "Banana", "Cherry");
+
+        System.out.println("Fruits: " + fruits);
+        System.out.println("Size: " + fruits.size());
+    }
+}`
+      }
+    };
+
+    const errors = {
+      c: `program.c:5:5: error: expected ';' before 'return'
+     return 0
+     ^
+error: compilation terminated with 1 error`,
+      cpp: `error: 'endl' was not declared in this scope
+  cout << result endl;
+         ^
+2 errors detected`,
+      javascript: `SyntaxError: Unexpected token ')'
+  console.log("result");)
+                       ^
+1 syntax error found`,
+      python: `IndentationError: expected an indented block
+  if score >= 90:
+              ^
+Line 2: error`,
+      java: `error: ';' expected
+    System.out.println("result")
+                                ^
+1 error`
+    };
+
+    const puzzleQuestions = {
+      riddle: {
+        title: "🧩 Riddle Challenge",
+        question: "What is the 10th Fibonacci number? (where F(1)=1, F(2)=1)",
+        answer: "The 10th Fibonacci number is 55"
+      },
+      logic: {
+        title: "🧠 Logic Challenge",
+        question: "If a=5 and b=3, what is a XOR b?",
+        answer: "5 XOR 3 = 6 (binary: 101 XOR 011 = 110)"
+      },
+      language: {
+        title: "📚 Language Challenge",
+        question: "In most languages, what happens when you create a List and add multiple items?",
+        answer: "The list stores all items in order and you can access them by index"
+      }
+    };
+
+    const outputs = {
+      riddle: {
+        c: `$ gcc program.c -o program
+$ ./program
+Fibonacci at position 10: 55
+
+✅ Compilation successful (0 warnings)`,
+        cpp: `$ g++ program.cpp -o program
+$ ./program
+2 3 5 7 11 13 17 19
+
+✅ Compilation successful (0 warnings)`,
+        javascript: `$ node program.js
+Original: SmartCompiler
+Reversed: reilpmoCltraMS
+
+✅ Execution completed successfully`,
+        python: `$ python program.py
+12321 is palindrome: True
+
+✅ Execution completed successfully`,
+        java: `$ javac Main.java
+$ java Main
+Factorial of 5: 120
+
+✅ Compilation successful (0 warnings)`
+      },
+      logic: {
+        c: `$ gcc program.c -o program
+$ ./program
+a = 5, b = 3
+a AND b = 1
+a OR b = 7
+a XOR b = 6
+
+✅ Compilation successful (0 warnings)`,
+        cpp: `$ g++ program.cpp -o program
+$ ./program
+Grade: C
+
+✅ Compilation successful (0 warnings)`,
+        javascript: `$ node program.js
+true AND true = true
+true AND false = false
+false AND true = false
+false AND false = false
+
+✅ Execution completed successfully`,
+        python: `$ python program.py
+Can drive
+
+✅ Execution completed successfully`,
+        java: `$ javac Main.java
+$ java Main
+Wednesday
+
+✅ Compilation successful (0 warnings)`
+      },
+      language: {
+        c: `$ gcc program.c -o program
+$ ./program
+String: Smart Compiler
+Length: 14
+First char: S
+
+✅ Compilation successful (0 warnings)`,
+        cpp: `$ g++ program.cpp -o program
+$ ./program
+Vector: 10 20 30 40 50
+
+✅ Compilation successful (0 warnings)`,
+        javascript: `$ node program.js
+Hello, Dev!
+
+✅ Execution completed successfully`,
+        python: `$ python program.py
+Numbers: [1, 2, 3, 4, 5]
+Squares: [1, 4, 9, 16, 25]
+
+✅ Execution completed successfully`,
+        java: `$ javac Main.java
+$ java Main
+Fruits: [Apple, Banana, Cherry]
+Size: 3
+
+✅ Compilation successful (0 warnings)`
+      }
+    };
+
+    function loadSample() {
+      const language = document.getElementById("language").value;
+      const puzzle = document.getElementById("puzzle").value;
+      const code = document.getElementById("code");
+      const output = document.getElementById("output");
+      const stepsPanel = document.getElementById("stepsPanel");
+      const metrics = document.getElementById("metrics");
+
+      if (!language) {
+        output.innerHTML = '<span class="code-warning">⚠️ Please select a language first</span>';
+        return;
+      }
+
+      if (!puzzle) {
+        output.innerHTML = '<span class="code-warning">⚠️ Please select a puzzle type</span>';
+        return;
+      }
+
+      if (!samples[puzzle] || !samples[puzzle][language]) {
+        output.innerHTML = '<span class="code-error">❌ Sample not found</span>';
+        return;
+      }
+
+      code.value = samples[puzzle][language];
+      output.innerHTML = '<span class="text-gray-400 text-sm">Sample loaded. Click "Compile & Run" to execute.</span>';
+      stepsPanel.classList.add('hidden');
+      metrics.classList.add('hidden');
+    }
+
+    function showStep(stepId) {
+      const step = document.getElementById(stepId);
+      if (step) {
+        step.classList.add('done');
+      }
+    }
+
+    function showErrorWithPuzzle(errorMsg, puzzle) {
+      const output = document.getElementById("output");
+      const actions = document.getElementById("outputActions");
+
+      output.innerHTML = `<div class="glass rounded-xl p-6 border-red-500/20 dark:border-red-500/10 bg-red-500/5 animate-fadeIn text-left">
+<div class="flex items-center gap-3 text-red-600 dark:text-red-400 font-bold text-[11px] uppercase tracking-[0.15em] mb-4">
+<svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.1" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+Compilation Error
+</div>
+<div class="text-xs font-mono leading-relaxed text-slate-700 dark:text-slate-300">
+${errorMsg.replace(/\n/g, '<br>')}
+</div>
+</div>`;
+
+      actions.innerHTML = `
+        <button onclick="openPuzzleModal('${puzzle}')"
+          class="w-full px-6 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 active:scale-[0.98] rounded-xl text-sm font-bold text-white transition-all shadow-lg shadow-blue-600/30 flex items-center justify-center gap-4 group mt-4">
+          <div class="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+          </div>
+          <div class="text-left flex-1">
+            <div class="uppercase text-[9px] tracking-[0.2em] opacity-70 font-black">Intelligent Fix</div>
+            <div class="text-base tracking-tight">Unlock Working Solution</div>
+          </div>
+          <svg class="w-5 h-5 opacity-50 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+        </button>
+      `;
+    }
+
+    function showAnswerPrompt(puzzle) {
+      const puzzleData = puzzleQuestions[puzzle];
+      if (puzzleData) {
+        const output = document.getElementById("output");
+        const actions = document.getElementById("outputActions");
+
+        output.innerHTML = `<div class="glass rounded-xl p-6 border-emerald-500/20 dark:border-emerald-500/10 bg-emerald-500/5 animate-fadeIn">
+<div class="flex items-center gap-3 text-emerald-600 dark:text-emerald-400 font-bold text-[11px] uppercase tracking-[0.15em] mb-3">
+<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+Bonus Challenge Available
+</div>
+<p class="text-sm text-slate-600 dark:text-slate-400 italic leading-relaxed">
+"${puzzleData.question}"
+</p>
+</div>`;
+
+        actions.innerHTML = `
+          <button onclick="openPuzzleModal('${puzzle}')"
+            class="w-full px-6 py-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 active:scale-[0.98] rounded-xl text-sm font-bold text-white transition-all shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-4 group mt-4">
+            <div class="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04M12 21.48V22"></path></svg>
+            </div>
+            <div class="text-left">
+              <div class="uppercase text-[9px] tracking-[0.2em] opacity-70 font-black">Skill Check</div>
+              <div class="text-base tracking-tight">Accept Achievement Challenge</div>
+            </div>
+            <svg class="w-5 h-5 ml-auto opacity-50 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+          </button>
+        `;
+      }
+    }
+
+    function submitAnswer(puzzle) {
+      const puzzleData = puzzleQuestions[puzzle];
+      const userAnswer = document.getElementById("answerInput").value.trim();
+      const language = document.getElementById("language").value;
+      const output = document.getElementById("output");
+
+      if (!userAnswer) {
+        alert("Please enter an answer");
+        return;
+      }
+
+      const correctAnswer = puzzleData.answer.toLowerCase().trim();
+      const isCorrect = userAnswer.toLowerCase().includes(correctAnswer) ||
+        correctAnswer.includes(userAnswer.toLowerCase());
+
+      if (isCorrect) {
+        output.innerHTML = `
+          <div class="glass rounded-xl p-6 border-emerald-500/20 dark:border-emerald-500/10 space-y-4 animate-fadeIn">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-500">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+              </div>
+              <div>
+                <div class="text-sm font-bold text-emerald-600 dark:text-emerald-400">Challenge Mastered</div>
+                <div class="text-xs text-slate-500 dark:text-slate-400">The solution has been unlocked.</div>
+              </div>
+            </div>
+            <button onclick="loadSolutionAfterError('${puzzle}', '${language}')" 
+              class="w-full px-5 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 active:scale-[0.98] rounded-xl text-sm font-bold text-white transition-all shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+              Inject Fixed Source Code
+            </button>
+          </div>
+        `;
+      } else {
+        output.innerHTML = `
+          <div class="glass rounded-xl p-5 border-red-500/20 dark:border-red-500/10 space-y-4 animate-fadeIn">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2 text-red-600 dark:text-red-400 font-bold text-xs uppercase tracking-widest">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                Incorrect Answer
+              </div>
+            </div>
+            
+            <p class="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+              Not quite right. Give it another thought:
+              <span class="block mt-2 italic text-slate-500 dark:text-slate-400">"${puzzleData.question}"</span>
+            </p>
+
+            <div class="flex gap-2">
+              <input type="text" id="answerInput" placeholder="Try again..." 
+                class="flex-1 px-4 py-2.5 bg-white dark:bg-black/20 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 focus:outline-none transition-all" />
+              <button onclick="submitAnswer('${puzzle}')" 
+                class="px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 active:scale-[0.96] rounded-xl text-sm font-bold text-white transition-all shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                Retry
+              </button>
+            </div>
+            
+            <button onclick="revealAnswer('${puzzle}')" 
+              class="w-full py-2 text-xs font-bold text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 uppercase tracking-widest transition-colors">
+              Show correct answer
+            </button>
+          </div>
+        `;
+        setTimeout(() => document.getElementById("answerInput").focus(), 100);
+      }
+    }
+
+    function revealAnswer(puzzle) {
+      const puzzleData = puzzleQuestions[puzzle];
+      const language = document.getElementById("language").value;
+      const output = document.getElementById("output");
+
+      output.innerHTML = `
+        <div class="glass rounded-xl p-6 border-slate-200 dark:border-white/5 space-y-4 animate-fadeIn">
+          <div class="flex items-center gap-2 text-slate-500 dark:text-slate-400 font-bold text-xs uppercase tracking-widest">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            Correct Answer Revealed
+          </div>
+          
+          <div class="bg-slate-100 dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+            <p class="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase mb-2 tracking-tighter">The Solution is:</p>
+            <p class="text-sm font-mono text-slate-800 dark:text-slate-200">
+              ${puzzleData.answer}
+            </p>
+          </div>
+
+          <button onclick="loadSolutionAfterError('${puzzle}', '${language}')" 
+            class="w-full px-5 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 active:scale-[0.98] rounded-xl text-sm font-bold text-white transition-all shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+            Load Working Code
+          </button>
+        </div>
+      `;
+    }
+
+    function loadSolutionAfterError(puzzle, language) {
+      const code = document.getElementById("code");
+      const output = document.getElementById("output");
+      if (samples[puzzle] && samples[puzzle][language]) {
+        code.value = samples[puzzle][language];
+        output.innerHTML = '<span class="text-gray-400 text-sm">Solution loaded. Click "Compile & Run" to verify.</span>';
+      }
+    }
+
+    // ==================== COMPREHENSIVE ERROR DETECTION ====================
+    function detectErrors(code, language) {
+      const lines = code.split('\n');
+      let error = detectSyntaxErrors(code, language, lines);
+      if (error) return error;
+      error = detectCommonPatterns(code, language, lines);
+      if (error) return error;
+      error = detectSemanticErrors(code, language, lines);
+      return error;
+    }
+
+    function detectSyntaxErrors(code, language, lines) {
+      // Check for unmatched brackets, braces, parentheses
+      const bracketError = checkBracketBalance(code);
+      if (bracketError) return bracketError;
+
+      // Check for unmatched quotes
+      const quoteError = checkQuoteBalance(code);
+      if (quoteError) return quoteError;
+
+      if (language === 'c' || language === 'cpp') {
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line || line.startsWith('//') || line.startsWith('*') || line.startsWith('#')) continue;
+          if (line.endsWith('{') || line.endsWith('}') || line.endsWith(';') || line.endsWith(',')) continue;
+
+          if (/^(int|char|float|double|bool|void|long|short|return|printf|cout|scanf|cin)/.test(line)) {
+            return {
+              error: `${language === 'cpp' ? 'program.cpp' : 'program.c'}:${i + 1}: error: expected ';' before end of statement\n    ${line}`,
+              line: i + 1
+            };
+          }
+        }
+      }
+
+      if (language === 'javascript') {
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line || line.startsWith('//')) continue;
+          if (line.endsWith(';') || line.endsWith('{') || line.endsWith('}') || line.endsWith(',')) continue;
+
+          if (/^(let|const|var|return|console)/.test(line)) {
+            return { error: `SyntaxError: Unexpected end of input on line ${i + 1}\n  ${line}`, line: i + 1 };
+          }
+        }
+      }
+
+      if (language === 'python') {
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (/^(if|else|elif|for|while|def|class|try|except)/.test(line) && !line.endsWith(':')) {
+            return { error: `SyntaxError: invalid syntax (missing ':' on line ${i + 1})\n  ${line}`, line: i + 1 };
+          }
+        }
+      }
+
+      if (language === 'java') {
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line || line.startsWith('//')) continue;
+          if (line.endsWith(';') || line.endsWith('{') || line.endsWith('}')) continue;
+
+          if (/^(int|String|System\.out|return|boolean|double|float)/.test(line)) {
+            return { error: `Main.java:${i + 1}: error: ';' expected\n    ${line}`, line: i + 1 };
+          }
+        }
+        if (!code.includes('public static void main')) {
+          return { error: `Main.java: error: missing main method\n  public static void main(String[] args) { ... }`, line: 1 };
+        }
+      }
+
+      return null;
+    }
+
+    function checkBracketBalance(code) {
+      const stack = [];
+      const brackets = { '{': '}', '[': ']', '(': ')' };
+      const closeBrackets = { '}': '{', ']': '[', ')': '(' };
+
+      for (let i = 0; i < code.length; i++) {
+        const char = code[i];
+
+        // Skip strings
+        if (char === '"' || char === "'" || char === '`') {
+          const quote = char;
+          i++;
+          while (i < code.length && code[i] !== quote) {
+            if (code[i] === '\\') i++;
+            i++;
+          }
+          continue;
+        }
+
+        if (brackets[char]) {
+          stack.push({ char, index: i });
+        } else if (closeBrackets[char]) {
+          if (stack.length === 0 || stack[stack.length - 1].char !== closeBrackets[char]) {
+            const lineNum = code.substring(0, i).split('\n').length;
+            return { error: `SyntaxError: Unexpected token '${char}'\n  Missing opening ${closeBrackets[char]}`, line: lineNum };
+          }
+          stack.pop();
+        }
+      }
+
+      if (stack.length > 0) {
+        const lineNum = code.substring(0, stack[0].index).split('\n').length;
+        return { error: `SyntaxError: Unexpected end of input\n  Missing closing '${brackets[stack[0].char]}'`, line: lineNum };
+      }
+
+      return null;
+    }
+
+    function checkQuoteBalance(code) {
+      const quotes = { '"': 0, "'": 0, '`': 0 };
+
+      for (let i = 0; i < code.length; i++) {
+        const char = code[i];
+
+        if (char === '\\' && i + 1 < code.length) {
+          i++;
+          continue;
+        }
+
+        if (char === '"' || char === "'" || char === '`') {
+          quotes[char]++;
+        }
+      }
+
+      for (const [quote, count] of Object.entries(quotes)) {
+        if (count % 2 !== 0) {
+          const quoteNames = { '"': 'double quote', "'": 'single quote', '`': 'backtick' };
+          const lineNum = code.split('\n').length;
+          return { error: `SyntaxError: Unexpected end of input\n  Missing closing ${quoteNames[quote]}`, line: lineNum };
+        }
+      }
+
+      return null;
+    }
+
+    function detectCommonPatterns(code, language, lines) {
+      if (language === 'c' || language === 'cpp') {
+        if (!code.includes('#include') && (code.includes('printf') || code.includes('scanf'))) {
+          return { error: `${language === 'cpp' ? 'program.cpp' : 'program.c'}: error: 'printf' was not declared in this scope`, line: 1 };
+        }
+        if (code.includes('cout') && !code.includes('#include <iostream>')) {
+          return { error: `program.cpp: error: 'cout' was not declared in this scope`, line: 1 };
+        }
+        if (code.includes('endl') && !code.includes('using namespace std')) {
+          return { error: `program.cpp: error: 'endl' was not declared in this scope`, line: 1 };
+        }
+      }
+
+      if (language === 'javascript') {
+        const varMatches = code.match(/\b(let|const|var)\s+(\w+)/g) || [];
+        const declaredVars = new Set(varMatches.map(v => v.split(/\s+/)[1]));
+        const usedVars = code.match(/\b[a-zA-Z_]\w*\b/g) || [];
+        for (const varName of usedVars) {
+          if (!declaredVars.has(varName) && !['console', 'log', 'function', 'return', 'if', 'else', 'for', 'while'].includes(varName)) {
+            if (code.includes(`${varName} =`) || code.includes(`${varName})`)) {
+              return { error: `ReferenceError: ${varName} is not defined\n  at <anonymous>`, line: 1 };
+            }
+          }
+        }
+      }
+
+      if (language === 'python') {
+        if (code.includes('input()') && !code.includes('=')) {
+          return { error: `NameError: name not defined\n  input() requires assignment`, line: 1 };
+        }
+      }
+
+      return null;
+    }
+
+    function detectSemanticErrors(code, language, lines) {
+      if (language === 'c' || language === 'cpp') {
+        if (code.match(/\/\s*0\b/)) {
+          return { error: `warning: division by zero [-Wdiv-by-zero]\n    result = value / 0;`, line: 1 };
+        }
+        if (code.includes('int x;') && !code.includes('x =') && code.includes('printf') && code.includes('x')) {
+          return { error: `warning: 'x' is used uninitialized [-Wuninitialized]`, line: 1 };
+        }
+      }
+
+      if (language === 'python') {
+        if (code.match(/for\s+\w+\s+in\s+range\(\s*\d+\s*\)/)) {
+          // Check for off-by-one style errors - heuristic only
+        }
+      }
+
+      return null;
+    }
+    // ==================== END ERROR DETECTION ====================
+
+    function compileCode() {
+      const signInBtn = document.getElementById("signInBtn");
+      const isSignedIn = signInBtn.textContent.includes("👤");
+
+      if (!isSignedIn) {
+        document.getElementById("output").innerHTML = '<span class="code-warning">🔐 Please sign in to compile code</span>';
+        setTimeout(() => openSignIn(), 500);
+        return;
+      }
+
+      const code = document.getElementById("code").value;
+      const language = document.getElementById("language").value;
+      const puzzle = document.getElementById("puzzle").value;
+      const output = document.getElementById("output");
+      const stepsPanel = document.getElementById("stepsPanel");
+      const metrics = document.getElementById("metrics");
+
+      if (!code.trim()) {
+        output.innerHTML = '<span class="code-warning">⚠️ Please write some code first</span>';
+        stepsPanel.classList.add('hidden');
+        metrics.classList.add('hidden');
+        return;
+      }
+
+      if (!language) {
+        output.innerHTML = '<span class="code-warning">⚠️ Please select a language</span>';
+        stepsPanel.classList.add('hidden');
+        metrics.classList.add('hidden');
+        return;
+      }
+
+      // Comprehensive error detection - replaces random logic
+      const errorDetails = detectErrors(code, language);
+      const hasError = errorDetails !== null;
+
+      // Show steps panel and reset steps
+      stepsPanel.classList.remove('hidden');
+      document.getElementById("step-lex").classList.remove('done');
+      document.getElementById("step-parse").classList.remove('done');
+      document.getElementById("step-compile").classList.remove('done');
+      document.getElementById("step-link").classList.remove('done');
+      document.getElementById("step-run").classList.remove('done');
+
+      // Show compilation in progress
+      output.innerHTML = `<span class="spinner"></span> Compiling ${language}...`;
+      document.getElementById("outputActions").innerHTML = ''; // Clear previous actions
+      metrics.classList.add('hidden');
+
+      // Step-by-step compilation with delays (stop at error point for failures)
+      if (hasError) {
+        setTimeout(() => showStep("step-lex"), 300);
+        setTimeout(() => showStep("step-parse"), 600);
+        setTimeout(() => {
+          const puzzleData = puzzle && puzzleQuestions[puzzle];
+          if (puzzleData) {
+            // Show actual error first, then puzzle question
+            showErrorWithPuzzle(errorDetails.error, puzzle);
+          } else {
+            output.innerHTML = `<span class="code-error">${errorDetails.error}</span>`;
+          }
+          stepsPanel.classList.add('hidden');
+        }, 900);
+      } else {
+        setTimeout(() => showStep("step-lex"), 300);
+        setTimeout(() => showStep("step-parse"), 600);
+        setTimeout(() => showStep("step-compile"), 900);
+        setTimeout(() => showStep("step-link"), 1200);
+
+        // Final output with metrics
+        setTimeout(() => {
+          showStep("step-run");
+          const result = (outputs[puzzle] && outputs[puzzle][language]) || `Program executed successfully!`;
+          output.innerHTML = `<span class="code-success fade-in">${result}</span>`;
+
+          // Show metrics
+          const codeLines = code.split('\n').length;
+          document.getElementById("metricLines").textContent = codeLines;
+          document.getElementById("metricTime").textContent = (Math.random() * 2 + 0.5).toFixed(1) + 'ms';
+          document.getElementById("metricMemory").textContent = (Math.random() * 3 + 1).toFixed(1) + 'MB';
+          document.getElementById("metricWarnings").textContent = '0';
+          metrics.classList.remove('hidden');
+        }, 1500);
+      }
+    }
+
+    function clearCode() {
+      document.getElementById("code").value = "";
+      document.getElementById("output").innerHTML = '<span class="text-slate-400 dark:text-slate-600 text-sm italic">Terminal ready. Waiting for compilation...</span>';
+      document.getElementById("outputActions").innerHTML = '';
+      document.getElementById("stepsPanel").classList.add('hidden');
+      document.getElementById("metrics").classList.add('hidden');
+      document.getElementById("step-lex").classList.remove('done');
+      document.getElementById("step-parse").classList.remove('done');
+      document.getElementById("step-compile").classList.remove('done');
+      document.getElementById("step-link").classList.remove('done');
+      document.getElementById("step-run").classList.remove('done');
+    }
+
+    // Allow Enter+Ctrl to compile
+    document.getElementById("code").addEventListener("keydown", function (e) {
+      if (e.ctrlKey && e.key === "Enter") {
+        compileCode();
+      }
+    });
+
+    function openSignIn() {
+      document.getElementById("signInModal").classList.add("active");
+    }
+
+    function closeSignIn() {
+      document.getElementById("signInModal").classList.remove("active");
+      document.getElementById("email").value = "";
+      document.getElementById("password").value = "";
+      document.getElementById("signInMessage").classList.add("hidden");
+    }
+
+    function loadDemoCredentials() {
+      document.getElementById("email").value = "smartcompiler@demo.io";
+      document.getElementById("password").value = "Smartcompiler@123";
+      document.getElementById("signInMessage").classList.add("hidden");
+      document.getElementById("email").focus();
+    }
+
+    function signIn() {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      const message = document.getElementById("signInMessage");
+
+      if (!email || !password) {
+        message.textContent = "⚠️ Please fill in all fields";
+        message.classList.remove("hidden", "bg-emerald-500/10", "text-emerald-400", "border-emerald-500/20");
+        message.classList.add("bg-red-500/10", "text-red-500", "border", "border-red-500/20");
+        return;
+      }
+
+      message.textContent = "✅ Successfully signed in!";
+      message.classList.remove("hidden", "bg-red-500/10", "text-red-500", "border-red-500/20");
+      message.classList.add("bg-emerald-500/10", "text-emerald-500", "border", "border-emerald-500/20");
+
+      setTimeout(() => {
+        closeSignIn();
+        document.getElementById("signInBtn").innerHTML = `<span class="relative z-10 flex items-center gap-2">👤 ${email.split("@")[0]}</span>`;
+      }, 1500);
+    }
+
+    // ==================== PUZZLE MODAL FUNCTIONS ====================
+    let currentPuzzleForModal = null;
+
+    function openPuzzleModal(puzzle) {
+      currentPuzzleForModal = puzzle;
+      const puzzleData = puzzleQuestions[puzzle];
+      document.getElementById("puzzleTitle").textContent = puzzleData.title;
+      document.getElementById("puzzleQuestion").textContent = puzzleData.question;
+      document.getElementById("puzzleAnswerInput").value = "";
+      document.getElementById("puzzleFeedback").classList.add("hidden");
+      document.getElementById("puzzleModal").classList.add("active");
+      setTimeout(() => document.getElementById("puzzleAnswerInput").focus(), 100);
+    }
+
+    function closePuzzleModal() {
+      document.getElementById("puzzleModal").classList.remove("active");
+      document.getElementById("puzzleAnswerInput").value = "";
+      document.getElementById("puzzleFeedback").classList.add("hidden");
+      currentPuzzleForModal = null;
+    }
+
+    function submitPuzzleAnswer() {
+      if (!currentPuzzleForModal) return;
+      const puzzleData = puzzleQuestions[currentPuzzleForModal];
+      const userAnswer = document.getElementById("puzzleAnswerInput").value.trim();
+      const feedback = document.getElementById("puzzleFeedback");
+
+      if (!userAnswer) {
+        feedback.textContent = "⚠️ Please enter an answer";
+        feedback.classList.remove("hidden", "bg-emerald-500/10", "text-emerald-600", "dark:text-emerald-400", "border-emerald-500/20");
+        feedback.classList.add("bg-yellow-500/10", "text-yellow-700", "dark:text-yellow-400", "border-yellow-500/20");
+        return;
+      }
+
+      const correctAnswer = puzzleData.answer.toLowerCase().trim();
+      const isCorrect = userAnswer.toLowerCase().includes(correctAnswer) ||
+        correctAnswer.includes(userAnswer.toLowerCase());
+
+      if (isCorrect) {
+        feedback.textContent = "✅ Correct! Loading solution...";
+        feedback.classList.remove("hidden", "bg-yellow-500/10", "text-yellow-700", "dark:text-yellow-400", "border-yellow-500/20");
+        feedback.classList.add("bg-emerald-500/10", "text-emerald-600", "dark:text-emerald-400", "border-emerald-500/20");
+
+        setTimeout(() => {
+          closePuzzleModal();
+          const language = document.getElementById("language").value;
+          if (samples[currentPuzzleForModal] && samples[currentPuzzleForModal][language]) {
+            document.getElementById("code").value = samples[currentPuzzleForModal][language];
+            document.getElementById("output").innerHTML = '<span class="text-slate-600 dark:text-slate-400 text-sm font-medium">Solution loaded. Click "Compile & Run" to verify.</span>';
+          }
+        }, 1500);
+      } else {
+        feedback.textContent = "❌ Not correct. Try again or reveal the answer!";
+        feedback.classList.remove("hidden", "bg-emerald-500/10", "text-emerald-600", "dark:text-emerald-400", "border-emerald-500/20");
+        feedback.classList.add("bg-red-500/10", "text-red-600", "dark:text-red-400", "border-red-500/20");
+        document.getElementById("puzzleAnswerInput").focus();
+      }
+    }
+
+    function revealPuzzleAnswer() {
+      if (!currentPuzzleForModal) return;
+      const puzzleData = puzzleQuestions[currentPuzzleForModal];
+      const feedback = document.getElementById("puzzleFeedback");
+
+      feedback.textContent = `Answer: ${puzzleData.answer}`;
+      feedback.classList.remove("hidden", "bg-red-500/10", "text-red-600", "dark:text-red-400", "border-red-500/20");
+      feedback.classList.add("bg-emerald-500/10", "text-emerald-600", "dark:text-emerald-400", "border-emerald-500/20");
+
+      const language = document.getElementById("language").value;
+      if (samples[currentPuzzleForModal] && samples[currentPuzzleForModal][language]) {
+        document.getElementById("code").value = samples[currentPuzzleForModal][language];
+        document.getElementById("output").innerHTML = '<span class="text-slate-600 dark:text-slate-400 text-sm font-medium">Solution loaded in editor.</span>';
+      }
+    }
+    // ==================== END PUZZLE MODAL ====================
+
+    document.getElementById("password").addEventListener("keydown", function (e) {
+      if (e.key === "Enter") {
+        signIn();
+      }
+    });
+
+    // Auto-load sample when language changes
+    document.getElementById("language").addEventListener("change", function () {
+      const puzzle = document.getElementById("puzzle").value;
+      if (puzzle) {
+        loadSample();
+      }
+    });
+
+    // Auto-load sample when puzzle changes
+    document.getElementById("puzzle").addEventListener("change", function () {
+      const language = document.getElementById("language").value;
+      if (language) {
+        loadSample();
+      }
+    });
+  </script>
+
+</body>
+
+</html>
